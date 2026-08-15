@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>Cockpit · Bot MT5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0F14; --panel:#121821; --border:#232D3A;
+    --text:#E8EDF2; --muted:#8593A3;
+    --green:#33D17A; --red:#FF4B4B; --amber:#FFB020; --blue:#3D8BFF;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(120% 80% at 50% -10%, #141C27 0%, var(--bg) 55%);
+    color:var(--text); font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh; -webkit-font-smoothing:antialiased; padding-bottom:44px;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;}
+  .shell{max-width:480px;margin:0 auto;padding:0 16px;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 4px 12px;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(145deg,var(--blue),#1E5FCC);
+    display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;font-size:14px;color:#fff;
+    box-shadow:0 0 0 1px rgba(255,255,255,.08) inset,0 4px 14px rgba(61,139,255,.35);}
+  .brand-text{font-family:'Space Grotesk';font-weight:600;font-size:15px;}
+  .brand-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+  .conn{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);}
+  .conn-dot{width:8px;height:8px;border-radius:50%;background:#3A4657;flex-shrink:0;}
+  .conn-dot.on{background:var(--green);animation:pulse 2s infinite;}
+  .conn-dot.trava{background:var(--red);animation:pulseR 1s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(51,209,122,.55);}70%{box-shadow:0 0 0 7px rgba(51,209,122,0);}100%{box-shadow:0 0 0 0 rgba(51,209,122,0);}}
+  @keyframes pulseR{0%{box-shadow:0 0 0 0 rgba(255,75,75,.6);}70%{box-shadow:0 0 0 7px rgba(255,75,75,0);}100%{box-shadow:0 0 0 0 rgba(255,75,75,0);}}
+
+  /* seletor de modo */
+  .mode-tabs{display:flex;gap:6px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:14px;}
+  .mode-tab{flex:1;text-align:center;padding:9px 6px;border-radius:9px;font-size:12.5px;font-family:'Space Grotesk';font-weight:600;color:var(--muted);cursor:pointer;transition:.15s;}
+  .mode-tab.active{background:var(--blue);color:#fff;}
+
+  .banner{border-radius:12px;padding:11px 13px;font-size:12px;margin-bottom:14px;line-height:1.5;}
+  .banner.sim{background:rgba(255,176,32,.1);border:1px solid rgba(255,176,32,.35);color:var(--amber);}
+  .banner.err{background:rgba(255,75,75,.1);border:1px solid rgba(255,75,75,.35);color:var(--red);}
+
+  label{display:block;font-size:11.5px;color:var(--muted);margin:0 0 6px;letter-spacing:.02em;text-transform:uppercase;}
+  input{width:100%;background:#0E141C;border:1px solid var(--border);color:var(--text);border-radius:10px;
+    padding:12px 13px;font-size:15px;font-family:'JetBrains Mono',monospace;margin-bottom:14px;outline:none;transition:border-color .15s;}
+  input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(61,139,255,.15);}
+  input::placeholder{color:#4C5A6C;font-family:'Inter';}
+
+  .btn{width:100%;border:none;border-radius:10px;padding:13px;font-family:'Space Grotesk';font-weight:600;font-size:14.5px;cursor:pointer;transition:transform .08s,filter .15s;}
+  .btn:active{transform:scale(.98);}
+  .btn-primary{background:var(--blue);color:#fff;}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+
+  .breaker-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-top:4px;
+    display:flex;align-items:center;justify-content:space-between;}
+  .breaker-card.on{border-color:rgba(51,209,122,.35);}
+  .breaker-card.trava{border-color:rgba(255,75,75,.4);}
+  .breaker-label{font-family:'Space Grotesk';font-weight:600;font-size:15px;}
+  .breaker-state{font-size:12px;color:var(--muted);margin-top:3px;}
+  .breaker-state.on{color:var(--green);}
+  .breaker-state.trava{color:var(--red);}
+  .switch{width:64px;height:34px;border-radius:20px;background:#0E141C;border:1px solid var(--border);position:relative;cursor:pointer;flex-shrink:0;transition:background .2s,border-color .2s;}
+  .switch.on{background:rgba(51,209,122,.16);border-color:rgba(51,209,122,.5);}
+  .switch .knob{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:linear-gradient(145deg,#3A4657,#232D3A);box-shadow:0 2px 6px rgba(0,0,0,.4);transition:left .2s,background .2s;}
+  .switch.on .knob{left:33px;background:linear-gradient(145deg,#4BE896,var(--green));}
+  .switch.locked{opacity:.45;cursor:not-allowed;}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+  .instrument{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+  .instrument-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
+  .instrument-value{font-size:22px;font-weight:700;line-height:1.1;}
+  .instrument-value.pos{color:var(--green);text-shadow:0 0 18px rgba(51,209,122,.35);}
+  .instrument-value.neg{color:var(--red);text-shadow:0 0 18px rgba(255,75,75,.3);}
+  .instrument-sub{font-size:12px;color:var(--muted);margin-top:4px;}
+
+  .section{margin-top:22px;}
+  .section-title{font-family:'Space Grotesk';font-weight:600;font-size:13.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px;display:flex;align-items:center;gap:8px;}
+  .section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .emergency{width:100%;margin-top:22px;border:1px solid rgba(255,75,75,.4);background:linear-gradient(180deg,rgba(255,75,75,.12),rgba(255,75,75,.05));
+    color:var(--red);border-radius:var(--radius);padding:15px;font-family:'Space Grotesk';font-weight:700;font-size:14px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px;}
+  .emergency:active{transform:scale(.98);}
+  .emergency:disabled{opacity:.4;}
+
+  .alert-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--muted);}
+  .alert-item:last-child{border-bottom:none;}
+  .alert-dot{width:6px;height:6px;border-radius:50%;background:var(--amber);margin-top:5px;flex-shrink:0;}
+  .alert-time{font-family:'JetBrains Mono';font-size:10.5px;color:#5B6B7E;}
+
+  .hint{font-size:11.5px;color:#5B6B7E;margin-top:8px;line-height:1.5;}
+  .hidden{display:none !important;}
+  .footer-note{text-align:center;color:#4C5A6C;font-size:11px;margin-top:26px;}
+  .devrow{display:flex;gap:8px;margin-top:10px;}
+  .devrow .btn{font-size:12px;padding:10px;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">M5</div>
+      <div>
+        <div class="brand-text">Cockpit</div>
+        <div class="brand-sub" id="serverLabel">Painel do bot MT5</div>
+      </div>
+    </div>
+    <div class="conn">
+      <span class="conn-dot" id="connDot"></span>
+      <span id="connText">desligado</span>
+    </div>
+  </div>
+
+  <div class="mode-tabs">
+    <div class="mode-tab active" id="tabSim" onclick="mudarModo('sim')">Simulação</div>
+    <div class="mode-tab" id="tabReal" onclick="mudarModo('real')">Conta real (API)</div>
+  </div>
+
+  <div id="banners"></div>
+
+  <!-- LOGIN / LIGAÇÃO AO BACKEND REAL -->
+  <div id="realSetup" class="card hidden" style="margin-bottom:16px;">
+    <label>URL do backend</label>
+    <input id="apiBase" type="text" placeholder="https://o-seu-backend.up.railway.app" />
+    <label>Utilizador do painel</label>
+    <input id="loginUser" type="text" autocomplete="username" placeholder="admin" />
+    <label>Senha do painel</label>
+    <input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••" />
+    <button class="btn btn-primary" onclick="ligarAoBackend()">Ligar ao backend</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard">
+
+    <div class="breaker-card" id="breakerCard">
+      <div>
+        <div class="breaker-label">Robô de execução</div>
+        <div class="breaker-state" id="breakerState">desligado</div>
+      </div>
+      <div class="switch" id="switchEl" onclick="alternarBot()">
+        <div class="knob"></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="instrument">
+        <div class="instrument-label">Saldo</div>
+        <div class="instrument-value mono" id="valBalance">—</div>
+        <div class="instrument-sub" id="valCurrency">USD</div>
+      </div>
+      <div class="instrument">
+        <div class="instrument-label">P&L flutuante</div>
+        <div class="instrument-value mono" id="valPnL">—</div>
+        <div class="instrument-sub" id="valPositions">0 posições</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Conta MT5</div>
+      <div class="card">
+        <label>Login</label>
+        <input id="cfgLogin" type="text" inputmode="numeric" placeholder="ex: 50234187" />
+        <label>Senha</label>
+        <input id="cfgSenha" type="password" placeholder="senha da conta MT5" />
+        <label>Servidor da corretora</label>
+        <input id="cfgServidor" type="text" placeholder="ex: ICMarketsSC-Demo" />
+        <label>Lote</label>
+        <input id="cfgLote" type="text" inputmode="decimal" placeholder="0.01" value="0.01" />
+        <button class="btn btn-ghost" onclick="guardarConfig()">Guardar configuração</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Gestão de risco</div>
+      <div class="card">
+        <div class="row2">
+          <div>
+            <label>Stop diário (valor)</label>
+            <input id="cfgStopDiario" type="text" inputmode="decimal" placeholder="50" value="50" />
+          </div>
+          <div>
+            <label>Spread máx. (pts)</label>
+            <input id="cfgSpread" type="text" inputmode="numeric" placeholder="30" value="30" />
+          </div>
+        </div>
+        <button class="btn btn-ghost" onclick="guardarConfig()">Guardar limites</button>
+        <p class="hint">Aplicado no servidor a cada ordem — continua ativo mesmo com o navegador fechado.</p>
+      </div>
+    </div>
+
+    <button class="emergency" id="btnFecharTudo" onclick="fecharTudo()">⏻ Fechar todas as posições</button>
+
+    <div class="section">
+      <div class="section-title">Alertas recentes</div>
+      <div class="card" id="alertsCard">
+        <div class="alert-item"><span class="alert-dot"></span><span>Sem alertas por agora.</span></div>
+      </div>
+    </div>
+
+    <div id="devTools" class="section">
+      <div class="section-title">Testar trava de segurança</div>
+      <div class="card">
+        <p class="hint" style="margin-top:0;">Simule uma queda de conexão para ver a trava de 30s bloquear novas ordens — só disponível no modo Simulação.</p>
+        <div class="devrow">
+          <button class="btn btn-ghost" onclick="simularQueda()">Simular queda de conexão</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="footer-note" id="footerNote">Modo simulação · atualiza a cada 1.2s</p>
+  </div>
+
+</div>
+
+<script>
+/* =========================================================================
+   ESTADO GERAL
+   ========================================================================= */
+let modo = 'sim'; // 'sim' | 'real'
+let authToken = null;
+let apiBase = '';
+let pollTimer = null;
+let simTimer = null;
+
+/* -------- estado do motor de simulação (paper trading) -------- */
+const sim = {
+  botLigado:false,
+  travaDeSeguranca:false,
+  quedaSimulada:false,
+  quedaDesde:null,
+  saldo:1000,
+  saldoInicioDoDia:1000,
+  floatingPnL:0,
+  posicoes:0,
+  alertas:[],
+  config:{ lote:0.01, dailyStopLossValor:50, spreadMaximoPontos:30 },
+};
+
+function alertaSim(msg){
+  sim.alertas.unshift({mensagem:msg, timestamp:new Date().toISOString()});
+  sim.alertas = sim.alertas.slice(0,20);
+}
+
+/* =========================================================================
+   TROCA DE MODO
+   ========================================================================= */
+function mudarModo(novo){
+  modo = novo;
+  document.getElementById('tabSim').classList.toggle('active', novo==='sim');
+  document.getElementById('tabReal').classList.toggle('active', novo==='real');
+  document.getElementById('realSetup').classList.toggle('hidden', novo==='sim');
+  document.getElementById('devTools').classList.toggle('hidden', novo!=='sim');
+  document.getElementById('banners').innerHTML = '';
+
+  if(pollTimer) clearInterval(pollTimer);
+  if(simTimer) clearInterval(simTimer);
+
+  if(novo==='sim'){
+    document.getElementById('serverLabel').textContent = 'Painel do bot MT5 — simulação';
+    document.getElementById('footerNote').textContent = 'Modo simulação · atualiza a cada 1.2s';
+    banner('sim', 'Modo simulação: nenhuma ordem real é enviada. Use para testar o painel antes de ligar à sua conta MT5 real.');
+    simTimer = setInterval(tickSimulacao, 1200);
+    render();
+  } else {
+    document.getElementById('footerNote').textContent = 'Ligado ao backend · atualiza a cada 5s';
+    if(!authToken){
+      banner('sim', 'Introduza o URL do backend e as credenciais do painel para ligar à sua conta real.');
+    }
+  }
+}
+
+function banner(tipo, msg){
+  document.getElementById('banners').innerHTML = `<div class="banner ${tipo}">${msg}</div>`;
+}
+
+/* =========================================================================
+   MOTOR DE SIMULAÇÃO (paper trading local, só para pré-visualização)
+   ========================================================================= */
+function tickSimulacao(){
+  // reset diario
+  const hoje = new Date().toISOString().slice(0,10);
+  if(sim._ultimoReset !== hoje){ sim.saldoInicioDoDia = sim.saldo; sim._ultimoReset = hoje; }
+
+  // queda de conexão simulada -> ativa trava apos 30s
+  if(sim.quedaSimulada){
+    // Na app real a trava só ativa após 30s sem sincronização (ver riskManager.js).
+    // Aqui aceleramos para 3s só para a simulação ser demonstrável rapidamente.
+    const segundos = (Date.now() - sim.quedaDesde)/1000;
+    sim.travaDeSeguranca = segundos > 3;
+  } else {
+    sim.travaDeSeguranca = false;
+  }
+
+  if(sim.botLigado && !sim.travaDeSeguranca){
+    // abre posição aleatoriamente
+    if(sim.posicoes < 2 && Math.random() < 0.15){
+      sim.posicoes++;
+    }
+    // drift do P&L flutuante
+    if(sim.posicoes > 0){
+      sim.floatingPnL += (Math.random()-0.47) * (sim.config.lote*100+2);
+    }
+    // fecha posição aleatoriamente, realiza o P&L
+    if(sim.posicoes > 0 && Math.random() < 0.12){
+      const realizado = sim.floatingPnL / sim.posicoes;
+      sim.saldo += realizado;
+      sim.floatingPnL -= realizado;
+      sim.posicoes--;
+    }
+    // spread abusivo ocasional (bloqueia novas entradas, so alerta as vezes)
+    const spreadAtual = Math.round(5 + Math.random()*40);
+    if(spreadAtual > sim.config.spreadMaximoPontos && Math.random() < 0.2){
+      alertaSim(`Spread acima do limite (${spreadAtual}pts). Nova ordem bloqueada.`);
+    }
+    // stop diario
+    const perdaDoDia = sim.saldoInicioDoDia - (sim.saldo + sim.floatingPnL);
+    if(perdaDoDia >= sim.config.dailyStopLossValor){
+      sim.botLigado = false;
+      alertaSim('Limite de perda diária atingido. Bot desligado automaticamente.');
+    }
+  }
+  render();
+}
+
+function simularQueda(){
+  sim.quedaSimulada = !sim.quedaSimulada;
+  sim.quedaDesde = Date.now();
+  alertaSim(sim.quedaSimulada ? 'Conexão simulada perdida — trava ativa em breve.' : 'Conexão simulada restaurada.');
+  render();
+}
+
+/* =========================================================================
+   RENDER
+   ========================================================================= */
+function render(){
+  const ligado = modo==='sim' ? sim.botLigado : ultimoStatusReal.botLigado;
+  const trava = modo==='sim' ? sim.travaDeSeguranca : ultimoStatusReal.travaDeSeguranca;
+  const conectado = modo==='sim' ? true : ultimoStatusReal.connected;
+  const saldo = modo==='sim' ? sim.saldo : ultimoStatusReal.balance;
+  const pnl = modo==='sim' ? sim.floatingPnL : ultimoStatusReal.floatingPnL;
+  const posicoes = modo==='sim' ? sim.posicoes : ultimoStatusReal.openPositions;
+  const alertas = modo==='sim' ? sim.alertas : ultimoStatusReal.alertas;
+
+  document.getElementById('switchEl').classList.toggle('on', ligado);
+  document.getElementById('switchEl').classList.toggle('locked', trava);
+  document.getElementById('breakerCard').classList.toggle('on', ligado && !trava);
+  document.getElementById('breakerCard').classList.toggle('trava', trava);
+  document.getElementById('breakerState').textContent = trava ? 'trava de segurança ativa' : (ligado ? 'ligado — a operar' : 'desligado');
+  document.getElementById('breakerState').className = 'breaker-state' + (trava ? ' trava' : (ligado?' on':''));
+
+  document.getElementById('connDot').className = 'conn-dot ' + (trava ? 'trava' : (conectado ? 'on' : ''));
+  document.getElementById('connText').textContent = trava ? 'sem sinal' : (conectado ? 'ligado' : 'desligado');
+
+  document.getElementById('valBalance').textContent = formatarMoeda(saldo||0);
+  const pnlEl = document.getElementById('valPnL');
+  pnlEl.textContent = (pnl>=0?'+':'') + formatarMoeda(pnl||0);
+  pnlEl.className = 'instrument-value mono ' + (pnl>0?'pos':(pnl<0?'neg':''));
+  document.getElementById('valPositions').textContent = `${posicoes||0} posições`;
+
+  document.getElementById('btnFecharTudo').disabled = !(posicoes>0);
+
+  const alertsCard = document.getElementById('alertsCard');
+  if(alertas && alertas.length){
+    alertsCard.innerHTML = alertas.map(a=>`
+      <div class="alert-item"><span class="alert-dot"></span>
+        <span>${escaparHtml(a.mensagem)}<br><span class="alert-time">${new Date(a.timestamp).toLocaleTimeString('pt-PT')}</span></span>
+      </div>`).join('');
+  } else {
+    alertsCard.innerHTML = `<div class="alert-item"><span class="alert-dot"></span><span>Sem alertas por agora.</span></div>`;
+  }
+}
+function formatarMoeda(v){ return Number(v||0).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function escaparHtml(s){ return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* =========================================================================
+   AÇÕES (comuns aos dois modos)
+   ========================================================================= */
+async function alternarBot(){
+  if(modo==='sim'){
+    if(sim.travaDeSeguranca) return;
+    sim.botLigado = !sim.botLigado;
+    alertaSim(sim.botLigado ? 'Bot ligado (simulação).' : 'Bot desligado (simulação).');
+    render();
+    return;
+  }
+  const ligarAgora = !ultimoStatusReal.botLigado;
+  try{
+    await apiFetch(ligarAgora ? '/api/bot/ligar' : '/api/bot/desligar', {method:'POST'});
+    atualizarStatusReal();
+  }catch(e){ banner('err', e.message); }
+}
+
+async function guardarConfig(){
+  const payload = {
+    login: document.getElementById('cfgLogin').value.trim() || undefined,
+    senha: document.getElementById('cfgSenha').value || undefined,
+    servidor: document.getElementById('cfgServidor').value.trim() || undefined,
+    lote: parseFloat(document.getElementById('cfgLote').value) || undefined,
+    dailyStopLossValor: parseFloat(document.getElementById('cfgStopDiario').value) || undefined,
+    spreadMaximoPontos: parseFloat(document.getElementById('cfgSpread').value) || undefined,
+  };
+  if(modo==='sim'){
+    sim.config.lote = payload.lote ?? sim.config.lote;
+    sim.config.dailyStopLossValor = payload.dailyStopLossValor ?? sim.config.dailyStopLossValor;
+    sim.config.spreadMaximoPontos = payload.spreadMaximoPontos ?? sim.config.spreadMaximoPontos;
+    alertaSim('Configuração guardada (simulação).');
+    render();
+    return;
+  }
+  try{
+    await apiFetch('/api/bot/config', {method:'POST', body:JSON.stringify(payload)});
+    banner('sim', 'Configuração guardada no backend.');
+  }catch(e){ banner('err', e.message); }
+}
+
+async function fecharTudo(){
+  if(!confirm('Fechar TODAS as posições abertas agora?')) return;
+  if(modo==='sim'){
+    sim.saldo += sim.floatingPnL;
+    sim.floatingPnL = 0;
+    sim.posicoes = 0;
+    alertaSim('Todas as posições fechadas (simulação).');
+    render();
+    return;
+  }
+  try{
+    await apiFetch('/api/bot/fechar-tudo', {method:'POST'});
+    atualizarStatusReal();
+  }catch(e){ banner('err', e.message); }
+}
+
+/* =========================================================================
+   MODO REAL — liga ao backend do zip que você já tem
+   ========================================================================= */
+let ultimoStatusReal = { botLigado:false, travaDeSeguranca:false, connected:false, balance:0, floatingPnL:0, openPositions:0, alertas:[] };
+
+async function ligarAoBackend(){
+  apiBase = document.getElementById('apiBase').value.trim().replace(/\/$/,'');
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  if(!apiBase){ banner('err','Introduza o URL do backend.'); return; }
+  try{
+    const r = await fetch(`${apiBase}/api/login`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username,password})
+    });
+    const data = await r.json().catch(()=>({}));
+    if(!r.ok){ banner('err', data.erro || 'Credenciais inválidas.'); return; }
+    authToken = data.token;
+    document.getElementById('serverLabel').textContent = apiBase.replace('https://','');
+    banner('sim', 'Ligado ao backend com sucesso.');
+    pollTimer = setInterval(atualizarStatusReal, 5000);
+    atualizarStatusReal();
+  }catch(e){
+    banner('err', 'Não foi possível contactar o backend. Verifique o URL e o ALLOWED_ORIGIN (CORS).');
+  }
+}
+
+async function apiFetch(path, options={}){
+  const r = await fetch(`${apiBase}${path}`, {
+    ...options,
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${authToken}`, ...(options.headers||{})}
+  });
+  if(!r.ok){ const d = await r.json().catch(()=>({})); throw new Error(d.erro || `Erro ${r.status}`); }
+  return r.json();
+}
+
+async function atualizarStatusReal(){
+  try{
+    const data = await apiFetch('/api/bot/status');
+    ultimoStatusReal = {
+      botLigado: data.bot.botLigado,
+      travaDeSeguranca: data.bot.travaDeSeguranca,
+      connected: data.conta ? data.conta.connected : false,
+      balance: data.conta ? data.conta.balance : 0,
+      floatingPnL: data.conta ? data.conta.floatingPnL : 0,
+      openPositions: data.conta ? data.conta.openPositions : 0,
+      alertas: data.bot.alertas || [],
+    };
+    render();
+  }catch(e){
+    banner('err', 'Sem resposta do backend. A tentar novamente...');
+  }
+}
+
+/* =========================================================================
+   ARRANQUE
+   ========================================================================= */
+mudarModo('sim');
+</script>
+</body>
+</html>

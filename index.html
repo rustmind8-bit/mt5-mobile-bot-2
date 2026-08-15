@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>Cockpit · Painel do Bot MT5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0F14;
+    --panel:#121821;
+    --panel-raised:#171F2A;
+    --border:#232D3A;
+    --text:#E8EDF2;
+    --muted:#8593A3;
+    --green:#33D17A;
+    --red:#FF4B4B;
+    --amber:#FFB020;
+    --blue:#3D8BFF;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(120% 80% at 50% -10%, #141C27 0%, var(--bg) 55%);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:40px;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;}
+  .display{font-family:'Space Grotesk',sans-serif;}
+
+  .shell{max-width:480px;margin:0 auto;padding:0 16px;}
+
+  /* ---------- TOPO ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 4px 14px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-mark{
+    width:30px;height:30px;border-radius:8px;
+    background:linear-gradient(145deg, var(--blue), #1E5FCC);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Space Grotesk';font-weight:700;font-size:14px;color:#fff;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.08) inset, 0 4px 14px rgba(61,139,255,0.35);
+  }
+  .brand-text{font-family:'Space Grotesk';font-weight:600;font-size:15px;letter-spacing:0.02em;}
+  .brand-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+  .conn{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);}
+  .conn-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);position:relative;flex-shrink:0;}
+  .conn-dot.on{background:var(--green);box-shadow:0 0 0 0 rgba(51,209,122,0.6);animation:pulse 2s infinite;}
+  .conn-dot.off{background:#3A4657;}
+  .conn-dot.trava{background:var(--red);animation:pulse-red 1s infinite;}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(51,209,122,0.55);}
+    70%{box-shadow:0 0 0 7px rgba(51,209,122,0);}
+    100%{box-shadow:0 0 0 0 rgba(51,209,122,0);}
+  }
+  @keyframes pulse-red{
+    0%{box-shadow:0 0 0 0 rgba(255,75,75,0.6);}
+    70%{box-shadow:0 0 0 7px rgba(255,75,75,0);}
+    100%{box-shadow:0 0 0 0 rgba(255,75,75,0);}
+  }
+
+  /* ---------- LOGIN ---------- */
+  .login-card{
+    margin-top:18vh;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:28px 22px;
+  }
+  .login-title{font-family:'Space Grotesk';font-size:20px;font-weight:600;margin:0 0 4px;}
+  .login-sub{color:var(--muted);font-size:13px;margin:0 0 22px;}
+
+  /* ---------- CAMPOS ---------- */
+  label{display:block;font-size:11.5px;color:var(--muted);margin:0 0 6px;letter-spacing:0.02em;text-transform:uppercase;}
+  input, select{
+    width:100%;
+    background:#0E141C;
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:10px;
+    padding:12px 13px;
+    font-size:15px;
+    font-family:'JetBrains Mono',monospace;
+    margin-bottom:14px;
+    outline:none;
+    transition:border-color .15s;
+  }
+  input:focus, select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(61,139,255,0.15);}
+  input::placeholder{color:#4C5A6C;font-family:'Inter';}
+
+  .btn{
+    width:100%;border:none;border-radius:10px;padding:13px;
+    font-family:'Space Grotesk';font-weight:600;font-size:14.5px;
+    cursor:pointer;transition:transform .08s, filter .15s;
+  }
+  .btn:active{transform:scale(0.98);}
+  .btn-primary{background:var(--blue);color:#fff;}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+  .error-text{color:var(--red);font-size:12.5px;margin:-6px 0 14px;min-height:15px;}
+
+  /* ---------- BREAKER (toggle principal) ---------- */
+  .breaker-card{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:20px;margin-top:16px;display:flex;align-items:center;justify-content:space-between;
+    position:relative;overflow:hidden;
+  }
+  .breaker-card.on{border-color:rgba(51,209,122,0.35);}
+  .breaker-card.trava{border-color:rgba(255,75,75,0.4);}
+  .breaker-label{font-family:'Space Grotesk';font-weight:600;font-size:15px;}
+  .breaker-state{font-size:12px;color:var(--muted);margin-top:3px;}
+  .breaker-state.on{color:var(--green);}
+  .breaker-state.trava{color:var(--red);}
+
+  .switch{
+    width:64px;height:34px;border-radius:20px;background:#0E141C;
+    border:1px solid var(--border);position:relative;cursor:pointer;flex-shrink:0;
+    transition:background .2s, border-color .2s;
+  }
+  .switch.on{background:rgba(51,209,122,0.16);border-color:rgba(51,209,122,0.5);}
+  .switch .knob{
+    position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;
+    background:linear-gradient(145deg,#3A4657,#232D3A);
+    box-shadow:0 2px 6px rgba(0,0,0,0.4);
+    transition:left .2s, background .2s;
+  }
+  .switch.on .knob{left:33px;background:linear-gradient(145deg,#4BE896,var(--green));}
+  .switch.disabled{opacity:0.5;cursor:not-allowed;}
+
+  /* ---------- CARDS DE INSTRUMENTO ---------- */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+  .instrument{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px;
+  }
+  .instrument-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;}
+  .instrument-value{font-size:22px;font-weight:700;line-height:1.1;}
+  .instrument-value.pos{color:var(--green);text-shadow:0 0 18px rgba(51,209,122,0.35);}
+  .instrument-value.neg{color:var(--red);text-shadow:0 0 18px rgba(255,75,75,0.3);}
+  .instrument-currency{font-size:12px;color:var(--muted);margin-top:4px;}
+
+  /* ---------- SECOES ---------- */
+  .section{margin-top:22px;}
+  .section-title{
+    font-family:'Space Grotesk';font-weight:600;font-size:13.5px;
+    color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;
+    margin:0 0 10px;display:flex;align-items:center;gap:8px;
+  }
+  .section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  /* ---------- EMERGENCIA ---------- */
+  .emergency{
+    width:100%;margin-top:22px;border:1px solid rgba(255,75,75,0.4);
+    background:linear-gradient(180deg, rgba(255,75,75,0.12), rgba(255,75,75,0.05));
+    color:var(--red);border-radius:var(--radius);padding:15px;
+    font-family:'Space Grotesk';font-weight:700;font-size:14px;letter-spacing:0.02em;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .emergency:active{transform:scale(0.98);}
+
+  /* ---------- ALERTAS ---------- */
+  .alert-item{
+    display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);
+    font-size:12.5px;color:var(--muted);
+  }
+  .alert-item:last-child{border-bottom:none;}
+  .alert-dot{width:6px;height:6px;border-radius:50%;background:var(--amber);margin-top:5px;flex-shrink:0;}
+  .alert-time{font-family:'JetBrains Mono';font-size:10.5px;color:#5B6B7E;white-space:nowrap;}
+
+  .hint{font-size:11.5px;color:#5B6B7E;margin-top:8px;line-height:1.5;}
+  .hidden{display:none !important;}
+  .top-error{
+    background:rgba(255,75,75,0.1);border:1px solid rgba(255,75,75,0.35);
+    color:var(--red);border-radius:10px;padding:10px 12px;font-size:12.5px;margin-bottom:14px;
+  }
+  .footer-note{text-align:center;color:#4C5A6C;font-size:11px;margin-top:26px;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">M5</div>
+      <div>
+        <div class="brand-text">Cockpit</div>
+        <div class="brand-sub" id="serverLabel">Painel do bot MT5</div>
+      </div>
+    </div>
+    <div class="conn" id="connWrap">
+      <span class="conn-dot off" id="connDot"></span>
+      <span id="connText">desligado</span>
+    </div>
+  </div>
+
+  <!-- TELA DE LOGIN DO PAINEL -->
+  <div id="loginScreen" class="login-card">
+    <p class="login-title">Aceder ao painel</p>
+    <p class="login-sub">Este login protege o painel — não é a sua conta MT5.</p>
+    <div id="loginError" class="error-text"></div>
+    <label>Utilizador</label>
+    <input id="loginUser" type="text" autocomplete="username" placeholder="admin" />
+    <label>Senha</label>
+    <input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••" />
+    <button class="btn btn-primary" onclick="fazerLogin()">Entrar</button>
+    <p class="hint">Servidor da API: <span id="apiBaseHint" class="mono"></span></p>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" class="hidden">
+
+    <div id="topError" class="top-error hidden"></div>
+
+    <!-- BREAKER PRINCIPAL -->
+    <div class="breaker-card" id="breakerCard">
+      <div>
+        <div class="breaker-label">Robô de execução</div>
+        <div class="breaker-state" id="breakerState">desligado</div>
+      </div>
+      <div class="switch" id="switchEl" onclick="alternarBot()">
+        <div class="knob"></div>
+      </div>
+    </div>
+
+    <!-- INSTRUMENTOS -->
+    <div class="grid2">
+      <div class="instrument">
+        <div class="instrument-label">Saldo</div>
+        <div class="instrument-value mono" id="valBalance">—</div>
+        <div class="instrument-currency" id="valCurrency">&nbsp;</div>
+      </div>
+      <div class="instrument">
+        <div class="instrument-label">P&L flutuante</div>
+        <div class="instrument-value mono" id="valPnL">—</div>
+        <div class="instrument-currency" id="valPositions">0 posições</div>
+      </div>
+    </div>
+
+    <!-- CONFIGURAÇÃO DA CONTA MT5 -->
+    <div class="section">
+      <div class="section-title">Conta MT5</div>
+      <div class="card">
+        <label>Login</label>
+        <input id="cfgLogin" type="text" inputmode="numeric" placeholder="ex: 5023 4187" />
+        <label>Senha</label>
+        <input id="cfgSenha" type="password" placeholder="senha da conta MT5" />
+        <label>Servidor da corretora</label>
+        <input id="cfgServidor" type="text" placeholder="ex: ICMarketsSC-Demo" />
+        <label>Lote</label>
+        <input id="cfgLote" type="text" inputmode="decimal" placeholder="0.01" />
+        <button class="btn btn-ghost" onclick="guardarConfig()">Guardar configuração</button>
+      </div>
+    </div>
+
+    <!-- GESTÃO DE RISCO -->
+    <div class="section">
+      <div class="section-title">Gestão de risco</div>
+      <div class="card">
+        <div class="row2">
+          <div>
+            <label>Stop diário (valor)</label>
+            <input id="cfgStopDiario" type="text" inputmode="decimal" placeholder="50" />
+          </div>
+          <div>
+            <label>Spread máx. (pts)</label>
+            <input id="cfgSpread" type="text" inputmode="numeric" placeholder="30" />
+          </div>
+        </div>
+        <button class="btn btn-ghost" onclick="guardarConfig()">Guardar limites</button>
+        <p class="hint">Estes limites são aplicados no servidor — continuam ativos mesmo que feche o navegador.</p>
+      </div>
+    </div>
+
+    <!-- BOTÃO DE EMERGÊNCIA -->
+    <button class="emergency" onclick="fecharTudo()">⏻ Fechar todas as posições</button>
+
+    <!-- ALERTAS -->
+    <div class="section">
+      <div class="section-title">Alertas recentes</div>
+      <div class="card" id="alertsCard">
+        <div class="alert-item"><span class="alert-dot"></span><span>Sem alertas por agora.</span></div>
+      </div>
+    </div>
+
+    <p class="footer-note">Ligado à MetaApi.cloud · atualiza a cada 5s</p>
+  </div>
+
+</div>
+
+<script>
+/* =====================================================================
+   CONFIGURAÇÃO
+   Troque API_BASE pelo URL do seu backend depois do deploy
+   (ex: https://o-seu-backend.up.railway.app)
+   ===================================================================== */
+const API_BASE = window.MT5_BOT_API_BASE || 'https://SEU-BACKEND.exemplo.com';
+document.getElementById('apiBaseHint').textContent = API_BASE;
+
+let authToken = null;      // guardado em memória (nunca em localStorage)
+let demoMode = false;      // ativado automaticamente se o backend não responder
+let pollTimer = null;
+
+// ---------- LOGIN ----------
+async function fazerLogin(){
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+
+  try{
+    const r = await fetch(`${API_BASE}/api/login`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    if(!r.ok){
+      const data = await r.json().catch(()=>({}));
+      errEl.textContent = data.erro || 'Credenciais inválidas.';
+      return;
+    }
+    const data = await r.json();
+    authToken = data.token;
+    entrarNoDashboard();
+  }catch(e){
+    // backend indisponível (ex: pré-visualização sem deploy) -> ativa modo demo
+    demoMode = true;
+    entrarNoDashboard();
+  }
+}
+
+function entrarNoDashboard(){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  if(demoMode){
+    mostrarTopError('Pré-visualização sem backend ligado — a mostrar dados de demonstração.');
+  }
+  atualizarStatus();
+  pollTimer = setInterval(atualizarStatus, 5000);
+}
+
+function mostrarTopError(msg){
+  const el = document.getElementById('topError');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+function esconderTopError(){
+  document.getElementById('topError').classList.add('hidden');
+}
+
+// ---------- CHAMADAS AUTENTICADAS ----------
+async function apiFetch(path, options={}){
+  const r = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers:{
+      'Content-Type':'application/json',
+      'Authorization': `Bearer ${authToken}`,
+      ...(options.headers||{})
+    }
+  });
+  if(!r.ok){
+    const data = await r.json().catch(()=>({}));
+    throw new Error(data.erro || `Erro ${r.status}`);
+  }
+  return r.json();
+}
+
+// ---------- ESTADO LOCAL DE DEMO (só usado se o backend não responder) ----------
+let demoState = { botLigado:false, balance:1000, equity:1000, floatingPnL:0, positions:0 };
+
+// ---------- STATUS / POLLING ----------
+async function atualizarStatus(){
+  let conta, bot;
+  if(demoMode){
+    conta = { balance:demoState.balance, equity:demoState.equity, floatingPnL:demoState.floatingPnL,
+               openPositions:demoState.positions, currency:'USD', connected:demoState.botLigado };
+    bot = { botLigado:demoState.botLigado, travaDeSeguranca:false, alertas:[] };
+  } else {
+    try{
+      const data = await apiFetch('/api/bot/status');
+      conta = data.conta; bot = data.bot;
+      esconderTopError();
+    }catch(e){
+      mostrarTopError('Sem resposta do servidor. A tentar novamente...');
+      return;
+    }
+  }
+  renderizar(conta, bot);
+}
+
+function renderizar(conta, bot){
+  // breaker
+  const ligado = bot.botLigado;
+  const trava = bot.travaDeSeguranca;
+  document.getElementById('switchEl').classList.toggle('on', ligado);
+  document.getElementById('breakerCard').classList.toggle('on', ligado && !trava);
+  document.getElementById('breakerCard').classList.toggle('trava', trava);
+  document.getElementById('breakerState').textContent = trava ? 'trava de segurança ativa' : (ligado ? 'ligado — a operar' : 'desligado');
+  document.getElementById('breakerState').className = 'breaker-state' + (trava ? ' trava' : (ligado ? ' on' : ''));
+
+  document.getElementById('connDot').className = 'conn-dot ' + (trava ? 'trava' : (conta && conta.connected ? 'on' : 'off'));
+  document.getElementById('connText').textContent = trava ? 'sem sinal' : (conta && conta.connected ? 'ligado' : 'desligado');
+
+  // instrumentos
+  if(conta){
+    document.getElementById('valBalance').textContent = formatarMoeda(conta.balance);
+    document.getElementById('valCurrency').textContent = conta.currency || '';
+    const pnl = conta.floatingPnL || 0;
+    const pnlEl = document.getElementById('valPnL');
+    pnlEl.textContent = (pnl>=0?'+':'') + formatarMoeda(pnl);
+    pnlEl.className = 'instrument-value mono ' + (pnl>0?'pos':(pnl<0?'neg':''));
+    document.getElementById('valPositions').textContent = `${conta.openPositions||0} posições`;
+  }
+
+  // alertas
+  const alertsCard = document.getElementById('alertsCard');
+  if(bot.alertas && bot.alertas.length){
+    alertsCard.innerHTML = bot.alertas.map(a => `
+      <div class="alert-item">
+        <span class="alert-dot"></span>
+        <span>${escaparHtml(a.mensagem)}<br><span class="alert-time">${new Date(a.timestamp).toLocaleTimeString('pt-PT')}</span></span>
+      </div>`).join('');
+  }
+}
+
+function formatarMoeda(v){
+  const n = Number(v||0);
+  return n.toLocaleString('pt-PT', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function escaparHtml(s){
+  return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+// ---------- AÇÕES ----------
+async function alternarBot(){
+  const ligarAgora = !document.getElementById('switchEl').classList.contains('on');
+
+  if(demoMode){
+    demoState.botLigado = ligarAgora;
+    atualizarStatus();
+    return;
+  }
+  try{
+    await apiFetch(ligarAgora ? '/api/bot/ligar' : '/api/bot/desligar', {method:'POST'});
+    atualizarStatus();
+  }catch(e){
+    mostrarTopError(e.message);
+  }
+}
+
+async function guardarConfig(){
+  const payload = {
+    login: document.getElementById('cfgLogin').value.trim() || undefined,
+    senha: document.getElementById('cfgSenha').value || undefined,
+    servidor: document.getElementById('cfgServidor').value.trim() || undefined,
+    lote: parseFloat(document.getElementById('cfgLote').value) || undefined,
+    dailyStopLossValor: parseFloat(document.getElementById('cfgStopDiario').value) || undefined,
+    spreadMaximoPontos: parseFloat(document.getElementById('cfgSpread').value) || undefined,
+  };
+
+  if(demoMode){
+    document.getElementById('serverLabel').textContent = payload.servidor || 'Painel do bot MT5';
+    esconderTopError();
+    mostrarTopError('Configuração guardada (modo demo).');
+    return;
+  }
+  try{
+    await apiFetch('/api/bot/config', {method:'POST', body: JSON.stringify(payload)});
+    esconderTopError();
+  }catch(e){
+    mostrarTopError(e.message);
+  }
+}
+
+async function fecharTudo(){
+  if(!confirm('Fechar TODAS as posições abertas agora?')) return;
+
+  if(demoMode){
+    demoState.floatingPnL = 0; demoState.positions = 0;
+    atualizarStatus();
+    return;
+  }
+  try{
+    await apiFetch('/api/bot/fechar-tudo', {method:'POST'});
+    atualizarStatus();
+  }catch(e){
+    mostrarTopError(e.message);
+  }
+}
+
+// Enter para submeter o login
+document.getElementById('loginPass').addEventListener('keydown', e=>{
+  if(e.key==='Enter') fazerLogin();
+});
+</script>
+</body>
+</html>
