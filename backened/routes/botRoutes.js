@@ -9,9 +9,9 @@ const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const PANEL_USERNAME = process.env.PANEL_USERNAME;
-const PANEL_PASSWORD_HASH = process.env.PANEL_PASSWORD_HASH;
+const PANEL_PASSWORD = process.env.PANEL_PASSWORD;
 
-if (!JWT_SECRET || !PANEL_USERNAME || !PANEL_PASSWORD_HASH) {
+if (!JWT_SECRET || !PANEL_USERNAME || !PANEL_PASSWORD) {
   console.warn('[botRoutes] JWT_SECRET, PANEL_USERNAME ou PANEL_PASSWORD_HASH em falta no .env');
 }
 
@@ -62,8 +62,9 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ erro: 'Utilizador e senha sao obrigatorios.' });
   }
 
-  const utilizadorValido = username === PANEL_USERNAME;
-  const senhaValida = utilizadorValido && (await bcrypt.compare(password, PANEL_PASSWORD_HASH));
+ const utilizadorValido = username === PANEL_USERNAME;
+  const senhaValida = utilizadorValido && password === PANEL_PASSWORD;
+  
 
   if (!utilizadorValido || !senhaValida) {
     return res.status(401).json({ erro: 'Credenciais invalidas.' });
